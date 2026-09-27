@@ -26,6 +26,7 @@
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/onest-cyr.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/onest-lat.woff2" crossorigin>
 <link rel="preload" as="image" href="assets/m/house-photo-m.webp" fetchpriority="high" media="(max-width: 760px) and (max-aspect-ratio: 2/3)">
+<link rel="preload" as="image" href="assets/m/drawing-sepia-m.webp" media="(max-width: 760px) and (max-aspect-ratio: 2/3)">
 <link rel="preload" as="image" href="assets/house-photo-2400.webp" fetchpriority="high" media="not all and (max-width: 760px) and (max-aspect-ratio: 2/3)">
 <script src="sait.js" defer></script>
 <style>
@@ -159,7 +160,7 @@ section{position:relative}
 /* телефон: вырезка x 20–88 % из 2400-пиксельных картинок (видна только середина) */
 @media (max-width: 760px) and (max-aspect-ratio: 2/3){
   .frame--photo{background-image:url(assets/m/house-photo-m.webp);background-size:68% 100%;background-position:62.5% 0}
-  .frame--draw{-webkit-mask-image:url(assets/m/drawing-lines-m.webp);mask-image:url(assets/m/drawing-lines-m.webp);-webkit-mask-size:68% 100%;mask-size:68% 100%;-webkit-mask-position:62.5% 0;mask-position:62.5% 0}
+  .frame--draw{background:url(assets/m/drawing-sepia-m.webp) 62.5% 0/68% 100% no-repeat;-webkit-mask:none;mask:none}
 }
 .hero .fade{position:absolute;inset:0;
   -webkit-mask:linear-gradient(90deg, rgba(0,0,0,.42) 0, rgba(0,0,0,.55) 26cqw, rgba(0,0,0,.85) 40cqw, #000 48cqw);
@@ -254,10 +255,15 @@ section{position:relative}
 .build{height:260vh;background:var(--paper)}
 .build .stage{position:sticky;top:0;height:100vh;overflow:hidden;container-type:size;--seam:100cqw}
 .build .frame{--W:max(100cqw, calc(100cqh * var(--ar)));--H:calc(var(--W) / var(--ar));position:absolute;width:var(--W);height:var(--H);left:calc((100cqw - var(--W)) * .62);top:calc((100cqh - var(--H)) / 2);will-change:transform}
-.build .side{position:absolute;inset:0}
-.build .side--photo{clip-path:inset(0 0 0 var(--seam))}
-.build .side--draw{clip-path:inset(0 calc(100cqw - var(--seam)) 0 0)}
-.build .seam-line{position:absolute;top:0;bottom:0;left:var(--seam);width:1px;background:rgba(28,34,43,.5);z-index:4}
+.build .side{position:absolute;inset:0;overflow:hidden;will-change:transform}
+/* шов едет так: «окно» сдвигается целиком, а картинка внутри — обратно, поэтому стоит на месте (только сдвиги слоёв — телефону легко) */
+.build .side--photo{transform:translate3d(var(--seam),0,0)}
+.build .side--draw{transform:translate3d(calc(var(--seam) - 100cqw),0,0)}
+.build .side--photo > *{--sx0:calc(-1 * var(--seam))}
+.build .side--draw > *{--sx0:calc(100cqw - var(--seam))}
+.build .side > .dots{transform:translate3d(var(--sx0),0,0)}
+.build .side > .frame{transform:translate3d(var(--sx0),0,0) scale(var(--drift, 1))}
+.build .seam-line{position:absolute;top:0;bottom:0;left:0;transform:translate3d(var(--seam),0,0);width:1px;background:rgba(28,34,43,.5);z-index:4}
 .build .seam-line span{opacity:var(--tag-o,1);transition:opacity .3s;position:absolute;top:auto;bottom:max(48px, 12vh);left:0;transform:translate(calc(-50% + var(--tag-dx,0px)),0);background:var(--paper);border:1px solid rgba(28,34,43,.4);padding:9px 14px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap;font-variant-numeric:tabular-nums}
 .build .copy{position:absolute;z-index:5;left:var(--pad);top:calc(var(--nav) + 5vh);width:min(500px, 40vw);padding:34px 36px 30px;background:rgba(251,250,248,.9);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--rule)}
 .build .copy .h2{font-size:clamp(34px, 3.4vw, 56px);margin-top:22px}
@@ -476,6 +482,17 @@ section{position:relative}
   .hero .dots{-webkit-mask:linear-gradient(#000, rgba(0,0,0,.4) 60cqh, transparent);mask:linear-gradient(#000, rgba(0,0,0,.4) 60cqh, transparent)}
   .hero .hgrid .g3{display:none}
   .hero .hgrid .g2{top:0;background:linear-gradient(transparent 0 48cqh, rgba(28,34,43,.3) 60cqh)}
+  /* шов едет «окном» (transform), а не обрезкой — без перерисовки больших картинок на каждом кадре */
+  :root .hero .side{overflow:hidden}
+  :root .hero .side--photo,:root.photo-wait .hero .side--photo{clip-path:none;transform:translate3d(var(--cutp, var(--cutx, 50cqw)),0,0);transition:transform 1.6s var(--ease) .15s}
+  :root .hero .side--photo > .frame{transform:translate3d(calc(-1 * var(--cutp, var(--cutx, 50cqw))),0,0);transition:transform 1.6s var(--ease) .15s;will-change:transform}
+  :root.photo-wait .hero{--cutp:100cqw}
+  :root.is-ready .hero .side--photo,:root.is-ready .hero .side--photo > .frame{transition:none}
+  :root .hero .side--draw{clip-path:none;transform:translate3d(calc(var(--cutx, 50cqw) - 100cqw),0,0)}
+  :root .hero .side--draw > .fade{transform:translate3d(calc(100cqw - var(--cutx, 50cqw)),0,0);will-change:transform}
+  :root .hero .hgrid .g2{left:0;transform:translate3d(var(--cutx, 50cqw),0,0)}
+  :root .hero .seam-tag--l{right:100cqw;transform:translate3d(calc(var(--cutx, 50cqw) - 18px),0,0)}
+  :root .hero .seam-tag--r{left:0;transform:translate3d(calc(var(--cutx, 50cqw) + 18px),0,0)}
   .hero .title{top:calc(var(--nav) + 30px)}
   .script{height:auto;width:min(calc(100cqw - 20px), 640px);margin:18px 0 0 -14px}
   .hero .scroll-hint{display:none}
@@ -664,8 +681,8 @@ section{position:relative}
 @keyframes ax-breathe{from{scale:1}to{scale:1.05}}
 .hero .frame{transform-origin:54.28% 72%;animation:ax-breathe 16s ease-in-out infinite alternate}
 @media (max-width: 1180px) and (max-aspect-ratio: 1/1), (max-width: 760px){ .hero .frame{animation:none} }
-@keyframes ax-float{0%,100%{translate:0 0}50%{translate:0 -8px}}
-.hero .script{animation:ax-float 6.5s ease-in-out infinite}
+@keyframes ax-float{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-8px,0)}}
+.hero .script{animation:ax-float 6.5s ease-in-out infinite;will-change:transform}
 /* шапка ушла с экрана — её анимации на паузе (не греем телефон) */
 .hero.off .frame,.hero.off .script,.hero.off .scroll-hint i::after{animation-play-state:paused}
 /* очень старые браузеры без единиц контейнера (iOS 15): простая шапка без половинок */

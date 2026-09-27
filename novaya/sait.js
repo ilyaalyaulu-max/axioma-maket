@@ -13,7 +13,8 @@
   const isMac = /Mac/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.userAgent);
   const M = { wheel: isMac ? 0.5 : 0.84, heroImg: 0.36, heroTitle: 0.06, pimg: 22, gpx: 6 };   // скорости: как у Turner (Lenis 1.2 с, фото 0.2 от прокрутки), чуть сильнее — у нас фото, не видео
   const nav = $('#nav');
-  const setVW = () => root.style.setProperty('--vw', root.clientWidth / 100 + 'px');   // сетка по ширине без полосы прокрутки (Windows)
+  let vwSet = '';
+  const setVW = () => { const v = root.clientWidth / 100 + 'px'; if (v !== vwSet){ vwSet = v; root.style.setProperty('--vw', v); } };   // сетка по ширине без полосы прокрутки (Windows); не трогаем, если ширина та же — на айфоне resize бывает при каждом скрытии адресной строки
   setVW();
 
   /* ── плавная прокрутка с инерцией (как Lenis у Turner): колесо мыши и тачпад ── */
@@ -97,10 +98,10 @@
   /* ── всё, что движется от прокрутки ── */
   const heroPin = $('#heroPin'), hero = $('#hero'), heroImgs = $$('#hero [data-hero="img"]'), heroTitle = $('#hero [data-hero="title"]'), heroTags = $$('#hero [data-hero="tag"]');
   const pimgBoxes = $$('.pimg:not(.pimg--x)'), pimgsX = $$('.pimg--x img');
-  const build = $('#proekt'), stage = build.querySelector('.stage'), drift = build.querySelectorAll('[data-drift]');
+  const build = $('#proekt'), stage = build.querySelector('.stage');
   const steps3 = build.querySelectorAll('.steps3 article'), dots3 = build.querySelectorAll('.steps3-dots i'), ready = $('#ready');
   const stageList = $('#stageList'), stgs = stageList.querySelectorAll('.stg');
-  const gal = $('#doma'), track = $('#track'), gBar = $('#gBar'), gCount = $('#gCount'), gcards = track.querySelectorAll('.gcard');
+  const gal = $('#doma'), galStage = gal.querySelector('.stage'), track = $('#track'), gBar = $('#gBar'), gCount = $('#gCount'), gcards = track.querySelectorAll('.gcard');
   let lastY = scrollY, vh = innerHeight, vw = root.clientWidth;
   const inView = r => r.bottom > -60 && r.top < vh + 60;
   /* фото в рамках двигаем только те, что сейчас на экране */
@@ -122,13 +123,13 @@
         if (pr.bottom > 0){
           const hp = clamp(-pr.top / Math.max(1, pr.height - hero.offsetHeight), 0, 1);
           const hk = clamp((hp - 0.04) / 0.86, 0, 1), hs = hk * hk * (3 - 2 * hk);
-          hero.style.setProperty('--cut', (50 * (1 - hs)).toFixed(2) + 'cqw');
+          hero.style.setProperty('--cutx', (50 * (1 - hs)).toFixed(2) + 'cqw');
           heroImgs.forEach(el => el.style.transform = '');
           heroTitle.style.transform = `translate3d(0,${(-hp * 18).toFixed(1)}px,0)`;
           heroTags.forEach(el => el.style.opacity = clamp(1 - hp * 3, 0, 1).toFixed(3));
         }
       } else if (y < vh * 1.4){
-        hero.style.removeProperty('--cut');
+        hero.style.removeProperty('--cutx');
         const p = y / vh;
         heroImgs.forEach(el => el.style.transform = `translate3d(0,${(y * M.heroImg).toFixed(1)}px,0)`);
         heroTitle.style.transform = `translate3d(0,${(y * M.heroTitle).toFixed(1)}px,0)`;
@@ -152,14 +153,14 @@
     /* от чертежа к дому: шов едет, чертёж становится домом */
     const br = build.getBoundingClientRect();
     if (inView(br)){
-      const bp = clamp(-br.top / (br.height - vh), 0, 1);
+      const bp = clamp(-br.top / Math.max(1, br.height - stage.offsetHeight), 0, 1);
       const sp = clamp((bp - 0.05) / 0.8, 0, 1), seam = 100 - sp * sp * (3 - 2 * sp) * 100;
       stage.style.setProperty('--seam', seam.toFixed(2) + 'cqw');
       stage.style.setProperty('--tag-o', clamp((100 - seam) / 6, 0, 1).toFixed(2));
       const rt = 'готовность ' + Math.round(100 - seam) + '%'; if (ready.textContent !== rt) ready.textContent = rt;
       const x = seam / 100 * vw, half = ready.offsetWidth / 2 + 12;   // табличка не уезжает за края экрана
       stage.style.setProperty('--tag-dx', (clamp(x, Math.max(110, half), vw - half) - x).toFixed(1) + 'px');
-      if (!reduce) drift.forEach(el => el.style.transform = `scale(${(1.08 - bp * 0.08).toFixed(4)})`);
+      if (!reduce) stage.style.setProperty('--drift', (1.08 - bp * 0.08).toFixed(4));
       const k = seam > 66 ? 0 : seam > 33 ? 1 : 2;
       steps3.forEach((a, i) => a.classList.toggle('on', i === k));
       dots3.forEach((d, i) => d.classList.toggle('on', i <= k));
@@ -173,7 +174,7 @@
     /* дома: лента едет вбок, пока листаем вниз */
     const gr = gal.getBoundingClientRect();
     if (desk && inView(gr)){
-      const gp = clamp(-gr.top / (gr.height - vh), 0, 1);
+      const gp = clamp(-gr.top / Math.max(1, gr.height - galStage.offsetHeight), 0, 1);
       const dist = track.scrollWidth - vw;
       track.style.transform = `translate3d(${(-dist * gp * gp * (3 - 2 * gp)).toFixed(1)}px,0,0)`;
       gBar.parentElement.style.setProperty('--gp', gp.toFixed(3));
@@ -330,7 +331,7 @@
   const capped = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
   const word = $('#hero .script .word'), stroke = $('#hero .script .stroke');
   const uWord = urlOf(word, 'webkitMaskImage', 'maskImage'), uStroke = urlOf(stroke, 'webkitMaskImage', 'maskImage');
-  const uDraw = urlOf($('#hero .frame--draw'), 'webkitMaskImage', 'maskImage'), uPhoto = urlOf($('#hero .frame--photo'), 'backgroundImage');
+  const uDraw = urlOf($('#hero .frame--draw'), 'webkitMaskImage', 'maskImage', 'backgroundImage'), uPhoto = urlOf($('#hero .frame--photo'), 'backgroundImage');
   const fontsP = document.fonts ? Promise.all([document.fonts.load('200 30px Onest', 'Строительная компания'), document.fonts.ready]).catch(() => {}) : Promise.resolve();
   capped(Promise.all([fontsP, loaded([uWord, uStroke])]), 1600).then(() => twoFrames(() => root.classList.remove('is-loading')));
   capped(loaded([uDraw]), 2600).then(() => root.classList.remove('draw-wait'));
