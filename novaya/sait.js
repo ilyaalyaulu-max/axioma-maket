@@ -5,6 +5,7 @@
   const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const lerp = (a, b, t) => a + (b - a) * t;
+  const twoFrames = fn => requestAnimationFrame(() => requestAnimationFrame(fn));
   const reduceMQ = matchMedia('(prefers-reduced-motion: reduce)'), fineMQ = matchMedia('(pointer: fine)');
   const stackMQ = matchMedia('(max-width: 1180px) and (max-aspect-ratio: 1/1), (max-width: 760px)');
   const phoneMQ = matchMedia('(max-width: 760px)');
@@ -12,6 +13,8 @@
   const isMac = /Mac/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.userAgent);
   const M = { wheel: isMac ? 0.5 : 0.84, heroImg: 0.36, heroTitle: 0.06, pimg: 22, gpx: 6 };   // скорости: как у Turner (Lenis 1.2 с, фото 0.2 от прокрутки), чуть сильнее — у нас фото, не видео
   const nav = $('#nav');
+  const setVW = () => root.style.setProperty('--vw', root.clientWidth / 100 + 'px');   // сетка по ширине без полосы прокрутки (Windows)
+  setVW();
 
   /* ── плавная прокрутка с инерцией (как Lenis у Turner): колесо мыши и тачпад ── */
   let target = scrollY, current = scrollY, gliding = false, gT = 0, lastSet = -1, menuOpen = false;
@@ -73,6 +76,7 @@
     const id = a.getAttribute('href'); if (id === '#'){ e.preventDefault(); return; }
     const el = document.querySelector(id); if (!el) return; e.preventDefault();
     if (menuOpen) closeMenu(false);
+    if (a.dataset.q) pickType(a.dataset.q);   // «Рассчитать ремонт» → в расчёте уже выбран ремонт
     const y = anchorY(el, id);
     if (reduce || !fine) scrollTo({top:y, behavior: reduce ? 'auto' : 'smooth'}); else glideTo(y);
     if (e.detail === 0 && id !== '#top'){ if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1'); el.focus({preventScroll:true}); }   // с клавиатуры — фокус туда же
@@ -189,12 +193,24 @@
     if (++still < 6) raf = requestAnimationFrame(frame);
   }
   addEventListener('scroll', kick, {passive:true});
-  addEventListener('resize', () => { vh = innerHeight; vw = root.clientWidth; kick(); });
+  addEventListener('resize', () => { vh = innerHeight; vw = root.clientWidth; setVW(); kick(); });
   addEventListener('load', kick);
   if (document.fonts) document.fonts.ready.then(kick);
   reduceMQ.addEventListener('change', e => { reduce = e.matches; syncWheel(); kick(); });
   fineMQ.addEventListener('change', e => { fine = e.matches; syncWheel(); });
   kick();
+
+  /* поворот телефона: страница меняет длину — возвращаем читателя в тот же раздел */
+  let anchor = null;
+  const blocks = $$('main > section, main > div, footer');
+  addEventListener('scroll', () => {
+    const m = innerHeight / 2;
+    for (const b of blocks){ const r = b.getBoundingClientRect(); if (r.top <= m && r.bottom >= m){ anchor = {b, f: (m - r.top) / r.height}; break; } }
+  }, {passive:true});
+  matchMedia('(orientation: portrait)').addEventListener('change', () => twoFrames(() => {
+    if (!anchor) return; const r = anchor.b.getBoundingClientRect();
+    stopGlide(); scrollTo(0, scrollY + r.top + anchor.f * r.height - innerHeight / 2);
+  }));
 
   /* шапка ушла с экрана — её анимации на паузе */
   new IntersectionObserver(([e]) => hero.classList.toggle('off', !e.isIntersecting)).observe(hero);
@@ -255,6 +271,7 @@
     qLabel.textContent = q < qs.length - 1 ? `Вопрос ${q + 1} из ${qs.length}` : 'Финальный шаг';
     qBack.style.visibility = q ? 'visible' : 'hidden'; qNext.textContent = q < qs.length - 1 ? 'Далее' : 'Получить расчёт';
     qDone.classList.remove('on'); qErr.hidden = true;
+    if (scroll) qs[q].querySelector('h3').focus({preventScroll:true});
     if (scroll && phoneMQ.matches){   // на телефоне вопрос не уезжает под верхнюю полосу
       const r = sheet.getBoundingClientRect(), top = nav.offsetHeight + 12;
       if (r.top < top && r.height < innerHeight - top) scrollTo({top: scrollY + r.top - top, behavior: reduce ? 'auto' : 'smooth'});
@@ -301,6 +318,7 @@
   }); });
   qArea.addEventListener('input', () => { $$('#qAreaBtns .opt').forEach(o => o.classList.toggle('sel', o.dataset.a === qArea.value)); markSel($('#qAreaBtns')); total(); });
   renderPacks();
+  function pickType(id){ const o = qType.querySelector(`[data-id="${id}"]`); if (!o) return; o.click(); q = 0; showQ(false); }
 
   /* ── старт шапки: ждём только то, что нужно шапке (раньше ждали все картинки страницы) ──
      надпись — когда готовы шрифт и «Аксиома»; чертёж — когда загружен; дом «достраивается», когда фото раскодировано */
@@ -310,7 +328,6 @@
     (function check(){ if (want.every(u => performance.getEntriesByName(u).length)) res(); else setTimeout(check, 50); })();
   });
   const capped = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
-  const twoFrames = fn => requestAnimationFrame(() => requestAnimationFrame(fn));
   const word = $('#hero .script .word'), stroke = $('#hero .script .stroke');
   const uWord = urlOf(word, 'webkitMaskImage', 'maskImage'), uStroke = urlOf(stroke, 'webkitMaskImage', 'maskImage');
   const uDraw = urlOf($('#hero .frame--draw'), 'webkitMaskImage', 'maskImage'), uPhoto = urlOf($('#hero .frame--photo'), 'backgroundImage');
