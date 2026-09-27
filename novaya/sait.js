@@ -10,7 +10,7 @@
   const stackMQ = matchMedia('(max-width: 1180px) and (max-aspect-ratio: 1/1), (max-width: 760px)');
   const phoneMQ = matchMedia('(max-width: 760px)');
   let reduce = reduceMQ.matches, fine = fineMQ.matches;
-  const isMac = /Mac/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.userAgent);
+  const isMac = /mac/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent);
   const M = { wheel: isMac ? 0.5 : 0.84, heroImg: 0.36, heroTitle: 0.06, pimg: 22, gpx: 6 };   // скорости: как у Turner (Lenis 1.2 с, фото 0.2 от прокрутки), чуть сильнее — у нас фото, не видео
   const nav = $('#nav');
   let vwSet = '';
@@ -29,7 +29,7 @@
     document.body.appendChild(probe); const lvh = probe.offsetHeight; probe.remove();
     const vis = innerHeight;
     let big = Math.max(lvh || 0, vis);
-    if (coarseMQ.matches && big - vis < 40) big = vis + Math.round(vis * 0.12);   // встроенный браузер мессенджера не знает «большой» высоты — берём запас
+    if (coarseMQ.matches && root.clientWidth <= 760 && vis > root.clientWidth && big - vis < 40) big = vis + Math.round(vis * 0.12);   // встроенный браузер мессенджера не знает «большой» высоты — берём запас
     root.style.setProperty('--vh-l', big + 'px');
     root.style.setProperty('--vh-cut', (big - vis) + 'px');
     root.classList.toggle('short', vis <= 640);
@@ -222,15 +222,21 @@
 
   /* поворот телефона: страница меняет длину — возвращаем читателя в тот же раздел */
   let anchor = null;
+  const portraitMQ = matchMedia('(orientation: portrait)'); let portrait = portraitMQ.matches;
   const blocks = $$('main > section, main > div, footer');
   addEventListener('scroll', () => {
+    if (portraitMQ.matches !== portrait) return;   // идёт поворот — браузер сам сдвигает страницу, это место не запоминаем
     const m = innerHeight / 2;
     for (const b of blocks){ const r = b.getBoundingClientRect(); if (r.top <= m && r.bottom >= m){ anchor = {b, f: (m - r.top) / r.height}; break; } }
   }, {passive:true});
-  matchMedia('(orientation: portrait)').addEventListener('change', () => twoFrames(() => {
-    if (!anchor) return; const r = anchor.b.getBoundingClientRect();
-    stopGlide(); scrollTo(0, scrollY + r.top + anchor.f * r.height - innerHeight / 2);
-  }));
+  portraitMQ.addEventListener('change', () => {
+    const a = anchor;
+    twoFrames(() => {
+      portrait = portraitMQ.matches;
+      if (!a) return; const r = a.b.getBoundingClientRect();
+      stopGlide(); scrollTo(0, scrollY + r.top + a.f * r.height - innerHeight / 2);
+    });
+  });
 
   /* шапка ушла с экрана — её анимации на паузе */
   new IntersectionObserver(([e]) => hero.classList.toggle('off', !e.isIntersecting)).observe(hero);
@@ -294,11 +300,10 @@
     if (scroll) qs[q].querySelector('h3').focus({preventScroll:true});
     if (scroll && phoneMQ.matches){   // на телефоне вопрос не уезжает под верхнюю полосу
       const r = sheet.getBoundingClientRect(), top = nav.offsetHeight + 12;
-      if (r.top < top && r.height < innerHeight - top) scrollTo({top: scrollY + r.top - top, behavior: reduce ? 'auto' : 'smooth'});
+      if (r.top < top) scrollTo({top: scrollY + r.top - top, behavior: reduce ? 'auto' : 'smooth'});
     }
   }
   /* телефон: +7 (XXX) XXX-XX-XX; 8 в начале — это тоже +7 */
-  const digits = v => { let d = v.replace(/\D/g, ''); if (d.length === 11 && d[0] === '8') d = '7' + d.slice(1); if (d.length === 10) d = '7' + d; return d; };
   function fmtPhone(v){
     let d = v.replace(/\D/g, ''); if (!d) return '';
     if (d[0] === '8') d = '7' + d.slice(1); else if (d[0] !== '7') d = '7' + d;
@@ -312,16 +317,23 @@
     if (fPhone.selectionStart === fPhone.value.length) fPhone.value = fmtPhone(fPhone.value);
   });
   fPhone.addEventListener('blur', () => { fPhone.value = fmtPhone(fPhone.value); });
-  [fName, fPhone, fAgree].forEach(el => el.addEventListener('input', () => el.removeAttribute('aria-invalid')));
+  function problems(){
+    const raw = fPhone.value.replace(/\D/g, ''), f = fmtPhone(fPhone.value), out = [];
+    if (fName.value.trim().length < 2) out.push([fName, 'Напишите, как к вам обращаться.']);
+    if (f.replace(/\D/g, '').length !== 11 || raw.length > 11) out.push([fPhone, 'Проверьте телефон: нужно 10 цифр после +7.']);
+    if (!fAgree.checked) out.push([fAgree, 'Отметьте согласие на обработку данных.']);
+    return out;
+  }
+  [fName, fPhone, fAgree].forEach(el => ['input', 'change'].forEach(ev => el.addEventListener(ev, () => {
+    el.removeAttribute('aria-invalid');
+    if (!qErr.hidden){ const p = problems(); qErr.textContent = p.map(x => x[1]).join(' '); qErr.hidden = !p.length; }   // ошибка тает по мере заполнения
+  })));
   function validate(){
-    const errs = [], bad = (el, msg) => { el.setAttribute('aria-invalid', 'true'); errs.push([el, msg]); };
     [fName, fPhone, fAgree].forEach(el => el.removeAttribute('aria-invalid'));
-    const d = digits(fPhone.value);
-    if (fName.value.trim().length < 2) bad(fName, 'Напишите, как к вам обращаться.');
-    if (!(d.length === 11 && d[0] === '7')) bad(fPhone, 'Проверьте телефон: нужно 10 цифр после +7.');
-    if (!fAgree.checked) bad(fAgree, 'Отметьте согласие на обработку данных.');
+    const errs = problems();
+    errs.forEach(([el]) => el.setAttribute('aria-invalid', 'true'));
     if (errs.length){ qErr.textContent = errs.map(x => x[1]).join(' '); qErr.hidden = false; errs[0][0].focus(); return false; }
-    qErr.hidden = true; fPhone.value = fmtPhone(d); return true;
+    qErr.hidden = true; fPhone.value = fmtPhone(fPhone.value); return true;
   }
   qNext.addEventListener('click', () => {
     if (q < qs.length - 1){ q++; showQ(true); return; }
@@ -355,7 +367,11 @@
   capped(Promise.all([fontsP, loaded([uWord, uStroke])]), 1600).then(() => twoFrames(() => root.classList.remove('is-loading')));
   capped(loaded([uDraw]), 2600).then(() => root.classList.remove('draw-wait'));
   const photoP = uPhoto ? loaded([uPhoto]).then(() => { const i = new Image(); i.src = uPhoto; return i.decode().catch(() => {}); }) : Promise.resolve();
-  capped(photoP, 7000).then(() => twoFrames(() => { root.classList.remove('photo-wait'); setTimeout(() => root.classList.add('is-ready'), 1900); }));
+  capped(photoP, 7000).then(() => twoFrames(() => {
+    root.classList.remove('photo-wait');
+    $$('.gcard img').forEach(i => { i.loading = 'eager'; });   // галерея — после шапки, чтобы не делить с ней сеть
+    setTimeout(() => root.classList.add('is-ready'), 1900);
+  }));
 
   window.AX_OK = true;
 })();
