@@ -16,6 +16,25 @@
   let vwSet = '';
   const setVW = () => { const v = root.clientWidth / 100 + 'px'; if (v !== vwSet){ vwSet = v; root.style.setProperty('--vw', v); } };   // сетка по ширине без полосы прокрутки (Windows); не трогаем, если ширина та же — на айфоне resize бывает при каждом скрытии адресной строки
   setVW();
+  /* высота экрана запоминается при открытии: на телефоне панели браузера (Safari, Chrome, Telegram, WhatsApp)
+     прячутся при прокрутке и меняют высоту окна — из-за этого дом в шапке прыгал. Пересчитываем только при повороте. */
+  const coarseMQ = matchMedia('(pointer: coarse)');
+  let frozenW = -1;
+  function freezeVH(){
+    const w = root.clientWidth;
+    if (coarseMQ.matches && w === frozenW) return;
+    frozenW = w;
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:100lvh;visibility:hidden;pointer-events:none';
+    document.body.appendChild(probe); const lvh = probe.offsetHeight; probe.remove();
+    const vis = innerHeight;
+    let big = Math.max(lvh || 0, vis);
+    if (coarseMQ.matches && big - vis < 40) big = vis + Math.round(vis * 0.12);   // встроенный браузер мессенджера не знает «большой» высоты — берём запас
+    root.style.setProperty('--vh-l', big + 'px');
+    root.style.setProperty('--vh-cut', (big - vis) + 'px');
+    root.classList.toggle('short', vis <= 640);
+  }
+  freezeVH();
 
   /* ── плавная прокрутка с инерцией (как Lenis у Turner): колесо мыши и тачпад ── */
   let target = scrollY, current = scrollY, gliding = false, gT = 0, lastSet = -1, menuOpen = false;
@@ -194,7 +213,7 @@
     if (++still < 6) raf = requestAnimationFrame(frame);
   }
   addEventListener('scroll', kick, {passive:true});
-  addEventListener('resize', () => { vh = innerHeight; vw = root.clientWidth; setVW(); kick(); });
+  addEventListener('resize', () => { vh = innerHeight; vw = root.clientWidth; setVW(); freezeVH(); kick(); });
   addEventListener('load', kick);
   if (document.fonts) document.fonts.ready.then(kick);
   reduceMQ.addEventListener('change', e => { reduce = e.matches; syncWheel(); kick(); });

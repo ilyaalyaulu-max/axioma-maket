@@ -25,9 +25,9 @@
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"GeneralContractor","name":"АКСИОМА","description":"Строительство загородных домов и ремонт помещений под ключ","areaServed":"Москва и Московская область","telephone":["+79652834086","+79670263222"],"sameAs":["https://www.avito.ru/brands/i12637135"]}</script>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/onest-cyr.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/onest-lat.woff2" crossorigin>
-<link rel="preload" as="image" href="assets/m/house-photo-m.webp" fetchpriority="high" media="(max-width: 760px) and (max-aspect-ratio: 2/3)">
-<link rel="preload" as="image" href="assets/m/drawing-sepia-m.webp" media="(max-width: 760px) and (max-aspect-ratio: 2/3)">
-<link rel="preload" as="image" href="assets/house-photo-2400.webp" fetchpriority="high" media="not all and (max-width: 760px) and (max-aspect-ratio: 2/3)">
+<link rel="preload" as="image" href="assets/m/house-photo-m.webp" fetchpriority="high" media="(max-width: 760px) and (orientation: portrait)">
+<link rel="preload" as="image" href="assets/m/drawing-sepia-m.webp" media="(max-width: 760px) and (orientation: portrait)">
+<link rel="preload" as="image" href="assets/house-photo-2400.webp" fetchpriority="high" media="not all and (max-width: 760px) and (orientation: portrait)">
 <script src="sait.js" defer></script>
 <style>
 @font-face{font-family:'Onest';font-style:normal;font-weight:200 600;font-display:swap;src:url(assets/fonts/onest-cyr.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
@@ -158,7 +158,7 @@ section{position:relative}
 .frame--photo{background:url(assets/house-photo-2400.webp) 0 0/100% 100% no-repeat}
 .frame--draw{background:var(--line-ink);-webkit-mask:url(assets/drawing-lines-2400.webp) 0 0/100% 100% no-repeat;mask:url(assets/drawing-lines-2400.webp) 0 0/100% 100% no-repeat}
 /* телефон: вырезка x 20–88 % из 2400-пиксельных картинок (видна только середина) */
-@media (max-width: 760px) and (max-aspect-ratio: 2/3){
+@media (max-width: 760px) and (orientation: portrait){
   .frame--photo{background-image:url(assets/m/house-photo-m.webp);background-size:68% 100%;background-position:62.5% 0}
   .frame--draw{background:url(assets/m/drawing-sepia-m.webp) 62.5% 0/68% 100% no-repeat;-webkit-mask:none;mask:none}
 }
@@ -252,8 +252,8 @@ section{position:relative}
 .card--cta .more{position:relative}
 
 /* ───── 4. ОТ ЧЕРТЕЖА К ДОМУ (закреплённый экран) ───── */
-.build{height:260vh;background:var(--paper)}
-.build .stage{position:sticky;top:0;height:100vh;overflow:hidden;container-type:size;--seam:100cqw}
+.build{height:calc(var(--vh-l, 100vh) * 2.6);background:var(--paper)}
+.build .stage{position:sticky;top:0;height:var(--vh-l, 100vh);overflow:hidden;container-type:size;--seam:100cqw}
 .build .frame{--W:max(100cqw, calc(100cqh * var(--ar)));--H:calc(var(--W) / var(--ar));position:absolute;width:var(--W);height:var(--H);left:calc((100cqw - var(--W)) * .62);top:calc((100cqh - var(--H)) / 2);will-change:transform}
 .build .side{position:absolute;inset:0;overflow:hidden;will-change:transform}
 /* шов едет так: «окно» сдвигается целиком, а картинка внутри — обратно, поэтому стоит на месте (только сдвиги слоёв — телефону легко) */
@@ -333,8 +333,8 @@ section{position:relative}
 .stg p{font-size:16px;line-height:1.6;color:var(--ink-2);max-width:460px}
 
 /* ───── 8. КАКИЕ ДОМА СТРОИМ (лента едет вбок) ───── */
-.gallery{height:250vh}
-.gallery .stage{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:clamp(28px, 4.6vh, 54px)}
+.gallery{height:calc(var(--vh-l, 100vh) * 2.5)}
+.gallery .stage{position:sticky;top:0;height:var(--vh-l, 100vh);overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:clamp(28px, 4.6vh, 54px)}
 .g-head{padding:0 var(--pad);display:grid;grid-template-columns:calc(var(--c1) - var(--pad)) 1fr auto;align-items:end;gap:0 30px}
 .g-head .eyebrow{align-self:start;margin-top:14px}
 .g-head .h2{font-size:clamp(32px, 3.4vw, 56px)}
@@ -474,8 +474,8 @@ section{position:relative}
 @media (max-width: 1180px) and (max-aspect-ratio: 1/1), (max-width: 760px){
   :root{--c1:calc(var(--vw, 1vw) * 25);--c2:calc(var(--vw, 1vw) * 50);--c3:calc(var(--vw, 1vw) * 75)}
   .glines{display:none}
-  .hero-pin{height:230svh}
-  .hero{position:sticky;top:0;height:100svh;min-height:0;--seam:50cqw}
+  .hero-pin{height:calc(var(--vh-l, 100svh) * 2.3)}
+  .hero{position:sticky;top:0;height:var(--vh-l, 100svh);min-height:0;--seam:50cqw}
   .hero .frame{--H:58cqh;--W:calc(var(--H) * var(--ar));--L:clamp(calc(100cqw - var(--W)), calc(var(--seam) - var(--sx) * var(--W)), 0px);top:calc(100cqh - var(--H));animation:none}
   .hero .side--photo{-webkit-mask:linear-gradient(transparent 0, transparent 45cqh, #000 60cqh);mask:linear-gradient(transparent 0, transparent 45cqh, #000 60cqh)}
   .hero .fade{-webkit-mask:linear-gradient(transparent 38cqh, #000 50cqh);mask:linear-gradient(transparent 38cqh, #000 50cqh)}
@@ -537,7 +537,7 @@ section{position:relative}
   .hero .display .thin{font-size:min(30px, calc((100vw - 40px) / 11.4))}
   .hero h1.eyebrow{font-size:12px;line-height:1.45}
   .hero .cta{font-size:12.5px;margin-top:14px;padding:10px 0}
-  .seam-tag{bottom:20px;font-size:11px;letter-spacing:.2em}
+  .seam-tag{bottom:calc(var(--vh-cut, 0px) + 20px);font-size:11px;letter-spacing:.2em}
   .seam-tag--l::after,.seam-tag--r::before{width:14px}
   /* о компании */
   .intro{padding-top:80px}
@@ -566,7 +566,7 @@ section{position:relative}
   .card--sm .more svg{width:34px}
   .card--cta{padding:26px 22px;gap:22px}
   /* от чертежа к дому: без коробки — текст на бумаге, которая тает к картинке */
-  .build{height:240vh}
+  .build{height:calc(var(--vh-l, 100vh) * 2.4)}
   .build .copy{left:0;right:0;top:var(--nav);width:auto;padding:16px var(--pad) 60px;border:0;background:linear-gradient(var(--paper) 62%, rgba(251,250,248,0))}
   .build .copy .eyebrow{display:none}
   .build .copy .h2{font-size:28px;margin-top:0}
@@ -575,7 +575,7 @@ section{position:relative}
   .steps3 h3{font-size:19px;margin:0;font-weight:400}
   .build .steps3 p{display:none}
   .steps3-dots{display:none}
-  .build .seam-line span{bottom:calc(100vh - 100svh + 28px);font-size:11.5px}
+  .build .seam-line span{bottom:calc(var(--vh-cut, 0px) + 28px);font-size:11.5px}
   /* выезд */
   .local{grid-template-columns:1fr}
   .local .txt{padding:34px 0 0}
@@ -641,20 +641,20 @@ section{position:relative}
   .foot-bottom{margin-top:40px}
 }
 /* короткий телефон (SE, mini, открытые панели Safari): шапка помещается целиком */
-@media (max-width: 760px) and (max-height: 640px){
-  .hero .title{top:calc(var(--nav) + 16px)}
-  .script{width:min(calc(100cqw - 20px), 640px, calc(100svh * .54))}
-  .hero .cta{margin-top:6px}
-  .seam-tag{bottom:14px}
+@media (max-width: 760px){
+  .short .hero .title{top:calc(var(--nav) + 16px)}
+  .short .script{width:min(calc(100cqw - 20px), 640px, calc((var(--vh-l, 100svh) - var(--vh-cut, 0px)) * .54))}
+  .short .hero .cta{margin-top:6px}
+  .short .seam-tag{bottom:calc(var(--vh-cut, 0px) + 14px)}
 }
 /* телефон лёжа: всё рассчитано на низкий экран */
 @media (max-height: 520px) and (orientation: landscape){
   :root{--nav:56px} .nav.is-compact{height:52px}
-  .hero{min-height:0;height:100svh}
+  .hero{min-height:0;height:var(--vh-l, 100svh)}
   .hero .title{--u:max(20px, min(3.35cqw, 6.2cqh));top:calc(var(--nav) + 4cqh)}
   .hero .display{margin-top:2cqh} .script{margin-top:max(18px, 4cqh)}
   .hero .cta{margin-top:2cqh} .scroll-hint{display:none} .seam-tag{bottom:14px}
-  .build .stage,.gallery .stage{height:100svh}
+  .build .stage,.gallery .stage{height:var(--vh-l, 100svh)}
   .build .copy{top:calc(var(--nav) + 10px);width:min(400px, 46vw);padding:18px 22px}
   .build .copy .h2{font-size:28px;margin-top:10px}
   .steps3{margin-top:14px} .steps3 p{display:none} .steps3-dots{margin-top:14px}
