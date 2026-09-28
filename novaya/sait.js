@@ -353,18 +353,16 @@
   function pickType(id){ const o = qType.querySelector(`[data-id="${id}"]`); if (!o) return; o.click(); q = 0; showQ(false); }
 
   /* ── старт шапки: ждём только то, что нужно шапке (раньше ждали все картинки страницы) ──
-     надпись — когда готовы шрифт и «Аксиома»; чертёж — когда загружен; дом «достраивается», когда фото раскодировано */
+     надпись с логотипом — когда готов шрифт; чертёж — когда загружен; дом «достраивается», когда фото раскодировано */
   const urlOf = (el, ...props) => { const cs = getComputedStyle(el); for (const p of props){ const m = (cs[p] || '').match(/url\(["']?([^"')]+)["']?\)/); if (m) return m[1]; } return null; };
   const loaded = urls => new Promise(res => {
     const want = urls.filter(Boolean).map(u => new URL(u, location.href).href);
     (function check(){ if (want.every(u => performance.getEntriesByName(u).length)) res(); else setTimeout(check, 50); })();
   });
   const capped = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
-  const word = $('#hero .script .word'), stroke = $('#hero .script .stroke');
-  const uWord = urlOf(word, 'webkitMaskImage', 'maskImage'), uStroke = urlOf(stroke, 'webkitMaskImage', 'maskImage');
   const uDraw = urlOf($('#hero .frame--draw'), 'webkitMaskImage', 'maskImage', 'backgroundImage'), uPhoto = urlOf($('#hero .frame--photo'), 'backgroundImage');
   const fontsP = document.fonts ? Promise.all([document.fonts.load('200 30px Onest', 'Строительная компания'), document.fonts.ready]).catch(() => {}) : Promise.resolve();
-  capped(Promise.all([fontsP, loaded([uWord, uStroke])]), 1600).then(() => twoFrames(() => root.classList.remove('is-loading')));
+  capped(fontsP, 1600).then(() => twoFrames(() => root.classList.remove('is-loading')));   // логотип — вектор в самой странице, ждать нечего, кроме шрифта
   capped(loaded([uDraw]), 2600).then(() => root.classList.remove('draw-wait'));
   const photoP = uPhoto ? loaded([uPhoto]).then(() => { const i = new Image(); i.src = uPhoto; return i.decode().catch(() => {}); }) : Promise.resolve();
   capped(photoP, 7000).then(() => twoFrames(() => {
